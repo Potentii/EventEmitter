@@ -1,0 +1,29 @@
+{
+  "name": "web-event-emitter",
+  "version": "1.0.0",
+  "description": "EventEmitter implementation that can be used on web projects",
+  "author": "Guilherme Reginaldo Ruella <potentii@gmail.com>",
+  "license": "MIT",
+  "keywords": [
+    "EventEmitter",
+    "event",
+    "emitter",
+    "web"
+  ],
+  "scripts": {
+    "build-es5": "exit 1",
+    "build-es6": "exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Potentii/EventEmitter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Potentii/EventEmitter/issues"
+  },
+  "homepage": "https://github.com/Potentii/EventEmitter#readme",
+  "files": [
+    "EventEmitter.js",
+    "test/"
+  ]
+}
