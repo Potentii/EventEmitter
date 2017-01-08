@@ -144,7 +144,7 @@ class EventEmitter{
       // *Creating the 'once' listener:
       let onceCallback = function(...args){
          // *Removing the listener:
-         this.off(event_name, onceCallback);
+         this.removeListener(event_name, onceCallback);
          // *Calling the listener:
          callback.call(this, ...args);
       };
@@ -173,7 +173,7 @@ class EventEmitter{
       // *Creating the 'once' listener:
       let onceCallback = function(...args){
          // *Removing the listener:
-         this.off(event_name, onceCallback);
+         this.removeListener(event_name, onceCallback);
          // *Calling the listener:
          callback.call(this, ...args);
       };
@@ -286,7 +286,7 @@ class EventEmitter{
             // *Checking if the first argument on the 'args' array is an Error:
             throw (args[0] instanceof Error) ?
                // *Throwing it if it is, or throwing a generic error if it's not:
-               args[0] : new Error('Uncaught, unspecified \"error\" event. (' + args[0] + ')');
+               args[0] : new Error('Uncaught, unspecified \'error\' event. (' + args[0] + ')');
       }
 
       // *Checking if callbacks were set for this event, if it don't, returning false:
