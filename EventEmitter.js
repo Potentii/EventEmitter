@@ -37,11 +37,11 @@ class EventEmitter{
     * @author Guilherme Reginaldo Ruella
     */
    _addListener(event_name, callback, append){
-      // *Getting the event name as string:
-      event_name = String(event_name);
-
       // *Checking if the callback is a function, and if it isn't, emitting an error:
       if(typeof(callback) !== 'function') throw new TypeError('\'callback\' argument must be a function');
+
+      // *Getting the event name as string:
+      event_name = String(event_name);
 
       // *Emitting the 'newListener' event:
       this.emit('newListener', event_name, callback);
@@ -104,15 +104,15 @@ class EventEmitter{
     * @author Guilherme Reginaldo Ruella
     */
    addListener(event_name, callback){
-      // *Calling the 'on' method:
-      return this.on(event_name, callback);
+      // *Calling the '_addListener' method:
+      return this._addListener(event_name, callback, true);
    }
 
 
 
    /**
     * Registers a new listener for a given event
-    * (The listener will be added on the beginning of the list)
+    * (The listener will be added at the beginning of the list)
     * @param  {*} event_name      The name of the event (Will be converted to string)
     * @param  {function} callback The listener to be registered
     * @return {EventEmitter}      This EventEmitter
@@ -126,31 +126,65 @@ class EventEmitter{
 
 
    /**
+    * Wraps a callback to be executed only once
+    * @param  {event_name} event_name The name of the event
+    * @param  {function} callback     The listener to be wrapped
+    * @return {function}              The wrapped stateful callback
+    * @author Guilherme Reginaldo Ruella
+    */
+   _wrapOnceCallback(event_name, callback){
+      // *Starting the wrapper:
+      let wrapper = {
+         scope: this,
+         fired: false,
+         wrapped_callback: undefined,
+         callback: callback
+      };
+
+      // *Creating the 'once' listener:
+      let wrapped_callback = function(...args){
+         // *Removing the listener:
+         this.scope.removeListener(event_name, wrapped_callback);
+
+         // *Checking if this callback was once fired:
+         if(!this.fired){
+            // *If it was:
+            // *Setting the fired flag as true:
+            this.fired = true;
+            // *Calling the listener:
+            callback.call(this.scope, ...args);
+         }
+      }.bind(wrapper);
+
+      // *Assigning the original callback:
+      wrapped_callback.callback = callback;
+      // *Assigning the wrapped callback of the wrapper:
+      wrapper.wrapped_callback = wrapped_callback;
+
+      // *Returning the wrapped callback function:
+      return wrapped_callback;
+   }
+
+
+
+   /**
     * Registers a new listener for a given event
     * (The listener will be called just one time)
-    * (The listener will be added on the beginning of the list)
+    * (The listener will be added at the beginning of the list)
     * @param  {*} event_name      The name of the event (Will be converted to string)
     * @param  {function} callback The listener to be registered
     * @return {EventEmitter}      This EventEmitter
     * @author Guilherme Reginaldo Ruella
     */
    prependOnceListener(event_name, callback){
-      // *Getting the event name as string:
-      event_name = String(event_name);
-
       // *Checking if the callback is a function, and if it isn't, emitting an error:
       if(typeof(callback) !== 'function') throw new TypeError('\'callback\' argument must be a function');
 
-      // *Creating the 'once' listener:
-      let onceCallback = function(...args){
-         // *Removing the listener:
-         this.removeListener(event_name, onceCallback);
-         // *Calling the listener:
-         callback.call(this, ...args);
-      };
+      // *Getting the event name as string:
+      event_name = String(event_name);
 
-      // *Calling the 'prependListener' method, so the listener will be added on the beginning of the list:
-      return this.prependListener(event_name, onceCallback);
+      // *Calling the '_addListener' method:
+      return this._addListener(event_name, this._wrapOnceCallback(event_name, callback), false);
    }
 
 
@@ -164,29 +198,21 @@ class EventEmitter{
     * @author Guilherme Reginaldo Ruella
     */
    once(event_name, callback){
-      // *Getting the event name as string:
-      event_name = String(event_name);
-
       // *Checking if the callback is a function, and if it isn't, emitting an error:
       if(typeof(callback) !== 'function') throw new TypeError('\'callback\' argument must be a function');
 
-      // *Creating the 'once' listener:
-      let onceCallback = function(...args){
-         // *Removing the listener:
-         this.removeListener(event_name, onceCallback);
-         // *Calling the listener:
-         callback.call(this, ...args);
-      };
+      // *Getting the event name as string:
+      event_name = String(event_name);
 
-      // *Calling the 'on' method, so the listener will be added on the end of the list:
-      return this.on(event_name, onceCallback);
+      // *Calling the '_addListener' method:
+      return this._addListener(event_name, this._wrapOnceCallback(event_name, callback), true);
    }
 
 
 
    /**
     * Removes a single listener of the given event
-    * @param  {string}   event_name The name of the event. If not set, all listeners of all events will be removed
+    * @param  {string}   event_name The name of the event
     * @param  {Function} callback   The listener to remove
     * @return {EventEmitter}        This EventEmitter
     * @author Guilherme Reginaldo Ruella
@@ -245,17 +271,18 @@ class EventEmitter{
          }
       } else{
          // *If it's not:
-         // *Getting each event's name and its callbacks:
-         for(let [event_name, callbacks] of this._events.entries()){
+         // *Copying the events list:
+         let events = new Map(this._events);
+         // *Cleaning the events list:
+         this._events = new Map();
+         // *Getting each event name and its callbacks:
+         for(let [event_name, callbacks] of events.entries()){
             // *Getting each callback registered for the current event:
             for(let callback of callbacks){
                // *Emitting the 'removeListener' event:
                this.emit('removeListener', event_name, callback);
             }
          }
-
-         // *Cleaning the events list:
-         this._events = new Map();
       }
 
       // *Returning this EventEmitter:
@@ -275,8 +302,10 @@ class EventEmitter{
       // *Getting the event name as string:
       event_name = String(event_name);
 
-      // *Getting a copy of the registered callbacks:
-      let callbacks = this.listeners(event_name);
+      // *Getting the registered callbacks:
+      let callbacks = this._events.get(event_name);
+      // *Getting a copy of the callbacks list, or an empty one if none were set:
+      callbacks = Array.isArray(callbacks) ? callbacks.concat([]) : [];
 
       // *Checking if it's the 'error' event:
       if(event_name === 'error'){
@@ -289,12 +318,14 @@ class EventEmitter{
                args[0] : new Error('Uncaught, unspecified \'error\' event. (' + args[0] + ')');
       }
 
-      // *Checking if callbacks were set for this event, if it don't, returning false:
-      if(!callbacks || !Array.isArray(callbacks) || !callbacks.length) return false;
-
+      // *Checking if callbacks were set for this event, and if it don't, returning false:
+      if(!callbacks.length) return false;
 
       // *Getting each registered callback for this event:
       for(let callback of callbacks){
+         // *Getting the wrapped callback if it have one:
+         callback = callback.wrapped_callback || callback;
+
          // *Calling the callback:
          callback.call(this, ...args);
       }
@@ -334,8 +365,14 @@ class EventEmitter{
       // *Getting all the callbacks of this event:
       let callbacks = this._events.get(event_name);
 
-      // *Returning a copy of the callbacks list, or an empty list if none were set yet:
-      return Array.isArray(callbacks) ? callbacks.concat([]) : [];
+      // *Getting a copy of the callbacks list, or an empty list if none were set yet:
+      callbacks = Array.isArray(callbacks) ? callbacks.concat([]) : [];
+
+      // *Unwrapping the callbacks if needed:
+      callbacks = callbacks.map(c => c.callback || c);
+
+      // *Returning the callbacks list:
+      return callbacks;
    }
 
 
@@ -347,11 +384,14 @@ class EventEmitter{
     * @author Guilherme Reginaldo Ruella
     */
    listenerCount(event_name){
-      // *Getting a copy of the callbacks for this event:
-      let callbacks = this.listeners(event_name);
+      // *Getting the event name as string:
+      event_name = String(event_name);
+
+      // *Getting the callbacks list of this event:
+      let callbacks = this._events.get(event_name);
 
       // *Returning the number of callbacks registered, if any:
-      return callbacks.length;
+      return Array.isArray(callbacks) ? callbacks.length : 0;
    }
 
 
