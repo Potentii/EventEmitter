@@ -1,24 +1,33 @@
 <!DOCTYPE html>
 <html>
    <head>
+      <!-- * Meta * -->
       <meta charset="utf-8">
 
+      <!-- * Mocha CSS * -->
       <link rel="stylesheet" href="../node_modules/mocha/mocha.css">
 
+      <!-- * Mocha and Chai * -->
       <script src="../node_modules/mocha/mocha.js"></script>
       <script src="../node_modules/chai/chai.js"></script>
 
+      <!-- * Setting up Mocha * -->
       <script>
          mocha.setup('bdd');
       </script>
 
-      <script src="../EventEmitter.js"></script>
+      <!-- * Test files * -->
+      <script src="../src/EventEmitter.js"></script>
       <script src="./test.js"></script>
 
+      <!-- * Title * -->
       <title>EventEmitter test</title>
    </head>
    <body>
+      <!-- * Test view * -->
       <div id="mocha"></div>
+
+      <!-- * Running Mocha * -->
       <script>
          mocha.run();
       </script>
